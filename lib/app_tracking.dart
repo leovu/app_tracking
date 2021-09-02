@@ -19,12 +19,19 @@ class AppTracking {
   //TODO: setup in main.dart, input MyApp parameter. You have to put WidgetsFlutterBinding.ensureInitialized(); before init
   static init({required Widget myApp, required bool testingCrashlytics}) async {
     await Firebase.initializeApp();
-    analytics = FirebaseAnalytics();
-    _kTestingCrashlytics = testingCrashlytics;
-    runZonedGuarded(() {
-      _initCrashlytics();
-      runApp(myApp);
-    }, FirebaseCrashlytics.instance.recordError);
+    if(!kIsWeb) {
+      analytics = FirebaseAnalytics();
+      _kTestingCrashlytics = testingCrashlytics;
+    }
+    if(kIsWeb) {
+        runApp(myApp);
+     }
+    else {
+        runZonedGuarded(() {
+        _initCrashlytics();
+        runApp(myApp);
+      }, FirebaseCrashlytics.instance.recordError);
+    }
   }
 
   static _initCrashlytics() async {
