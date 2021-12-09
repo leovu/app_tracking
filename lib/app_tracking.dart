@@ -7,7 +7,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AppTracking {
-  static FirebaseAnalytics? analytics;
+  static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   static const MethodChannel _channel = const MethodChannel('app_tracking');
   static var _kTestingCrashlytics = true;
 
@@ -20,7 +20,6 @@ class AppTracking {
   static init({required Widget myApp, required bool testingCrashlytics}) async {
     await Firebase.initializeApp();
     if(!kIsWeb) {
-      analytics = FirebaseAnalytics();
       _kTestingCrashlytics = testingCrashlytics;
     }
     if(kIsWeb) {
@@ -55,7 +54,6 @@ class AppTracking {
       required dynamic head,
       required dynamic params,
       required dynamic messageError}) async {
-    if (analytics == null) analytics = FirebaseAnalytics();
     if (kIsWeb) return;
     dynamic log = params;
     String error = "";
@@ -69,7 +67,7 @@ class AppTracking {
     } catch (e) {
       error = e.toString();
     }
-    analytics!.logEvent(name: 'api_tracking', parameters: <String, dynamic>{
+    analytics.logEvent(name: 'api_tracking', parameters: <String, dynamic>{
       "url": url ?? "",
       "headers": head != null ? "${head.toString()}" : "",
       "params": params != null ? "${log.toString()}" : "",
@@ -85,9 +83,8 @@ class AppTracking {
       required String userId,
       required String fullName,
       required String uuid}) {
-    if (analytics == null) analytics = FirebaseAnalytics();
     if (kIsWeb) return;
-    analytics!.logEvent(
+    analytics.logEvent(
       name: 'screen_tracking',
       parameters: <String, dynamic>{
         "screenName": screenName,
@@ -96,13 +93,13 @@ class AppTracking {
         "uuid": uuid
       },
     );
+    analytics.logScreenView(screenName: screenName);
   }
 
   static trackingNotification(
       {required String userId,
       required String fullName,
       required dynamic params}) {
-    if (analytics == null) analytics = FirebaseAnalytics();
     if (kIsWeb) return;
     dynamic log = params;
     try {
@@ -112,11 +109,45 @@ class AppTracking {
         }
       }
     } catch (_) {}
-    analytics!
+    analytics
         .logEvent(name: 'notification_tracking', parameters: <String, dynamic>{
       "userId": userId,
       "fullName": fullName,
       "params": log.toString(),
+    });
+  }
+
+  static trackingAPIDetection(
+      {required String userId,
+        required String fullName,
+        required String uuid,
+        required String url,
+        required String status,
+        required dynamic head,
+        required dynamic params,
+        required dynamic messageError}) async {
+    if (kIsWeb) return;
+    dynamic log = params;
+    String error = "";
+    try {
+      if (!(log is String)) {
+        if (log.containsKey('password')) {
+          log.remove('password');
+        }
+      }
+      error = messageError.toString();
+    } catch (e) {
+      error = e.toString();
+    }
+    analytics.logEvent(name: 'API_OCR', parameters: <String, dynamic>{
+      "url": url,
+      "headers": head != null ? "${head.toString()}" : "",
+      "params": params != null ? "${log.toString()}" : "",
+      "message": error,
+      "userId": userId,
+      "fullName": fullName,
+      "uuid": uuid,
+      "status": status
     });
   }
 }
