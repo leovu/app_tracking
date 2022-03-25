@@ -106,8 +106,8 @@ class AppTracking {
     });
   }
 
-  static trackingAPIOCRSuccess(
-      {required String userId,
+  static trackingAPIOCR(
+      {required String eventName,required String userId,
         required String fullName,
         required String uuid,
         required String url,
@@ -127,40 +127,7 @@ class AppTracking {
     } catch (e) {
       error = e.toString();
     }
-    analytics.logEvent(name: 'API_OCR_SUCCESS', parameters: <String, dynamic>{
-      "url": url,
-      "headers": head != null ? "${head.toString()}" : "",
-      "params": params != null ? "${log.toString()}" : "",
-      "message": error,
-      "userId": userId,
-      "fullName": fullName,
-      "uuid": uuid,
-      "status": status
-    });
-  }
-
-  static trackingAPIOCRFailed(
-      {required String userId,
-        required String fullName,
-        required String uuid,
-        required String url,
-        required String status,
-        required dynamic head,
-        required dynamic params,
-        required dynamic messageError}) async {
-    dynamic log = params;
-    String error = "";
-    try {
-      if (!(log is String)) {
-        if (log.containsKey('password')) {
-          log.remove('password');
-        }
-      }
-      error = messageError.toString();
-    } catch (e) {
-      error = e.toString();
-    }
-    analytics.logEvent(name: 'API_OCR_FAILED', parameters: <String, dynamic>{
+    analytics.logEvent(name: eventName, parameters: <String, dynamic>{
       "url": url,
       "headers": head != null ? "${head.toString()}" : "",
       "params": params != null ? "${log.toString()}" : "",
