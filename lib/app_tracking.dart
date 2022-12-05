@@ -106,6 +106,55 @@ class AppTracking {
     });
   }
 
+  ///saleclub
+  static trackingScreenSaleV2(
+      {required String screenName,
+        required String userId,
+        required String fullName,
+        required String uuid}) {
+    analytics.logEvent(
+      name: 'screen_sale_v2_tracking',
+      parameters: <String, dynamic>{
+        "screenName": screenName,
+        "userId": userId,
+        "fullName": fullName,
+        "uuid": uuid
+      },
+    );
+    analytics.logScreenView(screenName: screenName);
+  }
+  ///saleclub
+  static trackingErrorAPISaleV2(
+      {required String userId,
+        required String fullName,
+        required String uuid,
+        required String url,
+        required dynamic head,
+        required dynamic params,
+        required dynamic messageError}) async {
+    dynamic log = params;
+    String error = "";
+    try {
+      if (!(log is String)) {
+        if (log.containsKey('password')) {
+          log.remove('password');
+        }
+      }
+      error = messageError.toString();
+    } catch (e) {
+      error = e.toString();
+    }
+    analytics.logEvent(name: 'api_sale_v2_tracking', parameters: <String, dynamic>{
+      "url": url,
+      "headers": head != null ? "${head.toString()}" : "",
+      "params": params != null ? "${log.toString()}" : "",
+      "error": error,
+      "userId": userId,
+      "fullName": fullName,
+      "uuid": uuid
+    });
+  }
+  ///saleclub
   static trackingAPIOCR(
       {required String eventName,required String userId,
         required String fullName,
