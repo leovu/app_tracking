@@ -20,10 +20,14 @@ class AppTracking {
   static init({required Widget myApp, required bool testingCrashlytics}) async {
     await Firebase.initializeApp();
     _kTestingCrashlytics = testingCrashlytics;
-    runZonedGuarded(() {
+    Zone.current.runGuarded(() {
       _initCrashlytics();
       runApp(myApp);
-    }, FirebaseCrashlytics.instance.recordError);
+    });
+    // runZonedGuarded(() {
+    //   _initCrashlytics();
+    //   runApp(myApp);
+    // }, FirebaseCrashlytics.instance.recordError);
   }
 
   static _initCrashlytics() async {
