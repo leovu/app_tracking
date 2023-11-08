@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-// import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AppTracking {
   static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
@@ -21,7 +21,9 @@ class AppTracking {
     await Firebase.initializeApp();
     _kTestingCrashlytics = testingCrashlytics;
     Zone.current.runGuarded(() {
-      _initCrashlytics();
+      if(!kIsWeb){
+        _initCrashlytics();
+      }
       runApp(myApp);
     });
     // runZonedGuarded(() {
