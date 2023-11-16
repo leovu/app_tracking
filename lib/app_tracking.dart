@@ -169,7 +169,7 @@ class AppTracking {
         required String status,
         required dynamic head,
         required dynamic params,
-        required dynamic messageError}) async {
+        required dynamic messageError, required String screenName}) async {
     dynamic log = params;
     String error = "";
     try {
@@ -184,6 +184,7 @@ class AppTracking {
     }
     analytics.logEvent(name: eventName, parameters: <String, dynamic>{
       "url": url,
+      "screenName": screenName,
       "headers": head != null ? "${head.toString()}" : "",
       "params": params != null ? "${log.toString()}" : "",
       "message": error,
