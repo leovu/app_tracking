@@ -76,10 +76,10 @@ packages:
     dependency: transitive
     description:
       name: firebase_analytics
-      sha256: dbf1e7ab22cfb1f4a4adb103b46a26276b4edc593d4a78ef6fb942bafc92e035
+      sha256: "5e92d510eacd66c354718fd9cc8f66ffdfa025640b645c4742297fb973770508"
       url: "https://pub.dev"
     source: hosted
-    version: "10.10.7"
+    version: "10.7.4"
   firebase_analytics_platform_interface:
     dependency: transitive
     description:
@@ -124,10 +124,10 @@ packages:
     dependency: transitive
     description:
       name: firebase_crashlytics
-      sha256: "9897c01efaa950d2f6da8317d12452749a74dc45f33b46390a14cfe28067f271"
+      sha256: "5ccdf05de039f9544d0ba41c5ae2052ca2425985d32229911b09f69981164518"
       url: "https://pub.dev"
     source: hosted
-    version: "3.5.7"
+    version: "3.4.8"
   firebase_crashlytics_platform_interface:
     dependency: transitive
     description:
