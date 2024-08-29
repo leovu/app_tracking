@@ -64,7 +64,7 @@ class AppTracking {
     } catch (e) {
       error = e.toString();
     }
-    analytics.logEvent(name: 'api_tracking', parameters: <String, dynamic>{
+    analytics.logEvent(name: 'api_tracking', parameters: {
       "url": url,
       "headers": head != null ? "${head.toString()}" : "",
       "params": params != null ? "${log.toString()}" : "",
@@ -82,7 +82,7 @@ class AppTracking {
         required String uuid}) {
     analytics.logEvent(
       name: 'screen_tracking',
-      parameters: <String, dynamic>{
+      parameters: {
         "screenName": screenName,
         "userId": userId,
         "fullName": fullName,
@@ -105,7 +105,7 @@ class AppTracking {
       }
     } catch (_) {}
     analytics
-        .logEvent(name: 'notification_tracking', parameters: <String, dynamic>{
+        .logEvent(name: 'notification_tracking', parameters: {
       "userId": userId,
       "fullName": fullName,
       "params": log.toString(),
@@ -120,7 +120,7 @@ class AppTracking {
         required String uuid}) {
     analytics.logEvent(
       name: 'screen_sale_v2_tracking',
-      parameters: <String, dynamic>{
+      parameters: {
         "screenName": screenName,
         "userId": userId,
         "fullName": fullName,
@@ -150,7 +150,7 @@ class AppTracking {
     } catch (e) {
       error = e.toString();
     }
-    analytics.logEvent(name: 'api_sale_v2_tracking', parameters: <String, dynamic>{
+    analytics.logEvent(name: 'api_sale_v2_tracking', parameters: {
       "url": url,
       "headers": head != null ? "${head.toString()}" : "",
       "params": params != null ? "${log.toString()}" : "",
@@ -182,7 +182,7 @@ class AppTracking {
     } catch (e) {
       error = e.toString();
     }
-    analytics.logEvent(name: eventName, parameters: <String, dynamic>{
+    analytics.logEvent(name: eventName, parameters: {
       "url": url,
       "screenName": screenName,
       "headers": head != null ? "${head.toString()}" : "",
