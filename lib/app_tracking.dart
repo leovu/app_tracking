@@ -7,43 +7,49 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AppTracking {
+  static final _ready = Completer<void>();
   static var _kTestingCrashlytics = true;
-  //TODO: setup in main.dart, input MyApp parameter. You have to put WidgetsFlutterBinding.ensureInitialized(); before init
-  static init(
-      {required Widget myApp,
-      required FirebaseOptions options,
-      required bool testingCrashlytics}) async {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(options: options);
-    }
-    _kTestingCrashlytics = testingCrashlytics;
-    // Crashlytics wiring
+  static Future<void> setup({required bool enableCrashlytics}) async {
     if (!kIsWeb) {
-      try {
-        await _initCrashlytics();
-      } catch (e, stack) {
-        debugPrint('Error initializing Crashlytics: $e');
-        debugPrintStack(stackTrace: stack);
-      }
+      await FirebaseCrashlytics.instance
+          .setCrashlyticsCollectionEnabled(enableCrashlytics);
+
+      final original = FlutterError.onError;
+      FlutterError.onError = (FlutterErrorDetails details) async {
+        await FirebaseCrashlytics.instance.recordFlutterError(details);
+        original?.call(details);
+      };
+
+      WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return false;
+      };
     }
-    // Bắt lỗi async ngoài Flutter framework
-    final dispatcher = WidgetsBinding.instance.platformDispatcher;
-    dispatcher.onError = (Object error, StackTrace stack) {
+  }
+  static Future<void> init({
+    required Widget myApp,
+    required FirebaseOptions options,
+    required bool testingCrashlytics,
+  }) async {
+    await Firebase.initializeApp(options: options);
+    Zone.current.runGuarded(()async{
+      _kTestingCrashlytics = testingCrashlytics;
       if (!kIsWeb) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        await _initCrashlytics();
+        final dispatcher = WidgetsBinding.instance.platformDispatcher;
+        dispatcher.onError = (error, stack) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+          return false;
+        };
       }
-      return false; // không chặn mặc định
-    };
-    // Chạy app trong runZonedGuarded để bắt các lỗi chưa bắt
-    runZonedGuarded(() {
       runApp(myApp);
-    }, (error, stack) {
-      if (!kIsWeb) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      }
+    });
+
+    // đánh dấu “đã có frame đầu tiên”
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_ready.isCompleted) _ready.complete();
     });
   }
-
   static bool get _crashlyticsEnabled => _kTestingCrashlytics;
 
   static Future<void> _initCrashlytics() async {
@@ -59,24 +65,25 @@ class AppTracking {
     };
   }
 
-  static Future<void> _logEvent(String name,
-      {Map<String, Object>? parameters}) async {
+  static Future<void> _logEvent(String name, {Map<String, Object>? parameters}) async {
+    if (!_ready.isCompleted) await _ready.future; // chờ UI attach
+
     final fa = FirebaseAnalytics.instance;
     try {
       await fa.logEvent(name: name, parameters: parameters);
     } on PlatformException catch (_) {
-      // Trường hợp hiếm khi engine chưa attach → thử lại sau frame
-      await WidgetsBinding.instance.endOfFrame;
+      await WidgetsBinding.instance.endOfFrame; // đợi thêm một frame
       await fa.logEvent(name: name, parameters: parameters);
     }
   }
 
   static Future<void> _logScreenView(String screenName) async {
+    if (!_ready.isCompleted) await _ready.future;
+
     final fa = FirebaseAnalytics.instance;
     try {
       await fa.logScreenView(screenName: screenName);
     } on PlatformException catch (_) {
-      // Trường hợp hiếm khi engine chưa attach → thử lại sau frame
       await WidgetsBinding.instance.endOfFrame;
       await fa.logScreenView(screenName: screenName);
     }
@@ -84,15 +91,14 @@ class AppTracking {
 
   static trackingErrorAPI(
       {required String userId,
-      required String fullName,
-      required String uuid,
-      required String url,
-      required dynamic head,
-      required dynamic params,
-      required dynamic messageError}) async {
+        required String fullName,
+        required String uuid,
+        required String url,
+        required dynamic head,
+        required dynamic params,
+        required dynamic messageError}) async {
     dynamic log = params;
     String error = "";
-    final fa = FirebaseAnalytics.instance;
     try {
       if (!(log is String)) {
         if (log.containsKey('password')) {
@@ -116,22 +122,25 @@ class AppTracking {
 
   static trackingScreen(
       {required String screenName,
-      required String userId,
-      required String fullName,
-      required String uuid}) async {
+        required String userId,
+        required String fullName,
+        required String uuid}) async {
     await _logEvent('screen_tracking', parameters: {
       'screenName': screenName,
       'userId': userId,
       'fullName': fullName,
       'uuid': uuid,
     });
-    await _logScreenView(screenName);
+    // Đảm bảo UI đã có view trước khi logScreenView
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _logScreenView(screenName);
+    });
   }
 
   static trackingNotification(
       {required String userId,
-      required String fullName,
-      required dynamic params}) async {
+        required String fullName,
+        required dynamic params}) async {
     dynamic log = params;
     try {
       if (log is! String && (log as Map).containsKey('password')) {
@@ -148,27 +157,30 @@ class AppTracking {
   ///saleclub
   static trackingScreenSaleV2(
       {required String screenName,
-      required String userId,
-      required String fullName,
-      required String uuid}) async {
+        required String userId,
+        required String fullName,
+        required String uuid}) async {
     await _logEvent('screen_sale_v2_tracking', parameters: {
       'screenName': screenName,
       'userId': userId,
       'fullName': fullName,
       'uuid': uuid,
     });
-    await _logScreenView(screenName);
+    // Đảm bảo UI đã có view trước khi logScreenView
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _logScreenView(screenName);
+    });
   }
 
   ///saleclub
   static trackingErrorAPISaleV2(
       {required String userId,
-      required String fullName,
-      required String uuid,
-      required String url,
-      required dynamic head,
-      required dynamic params,
-      required dynamic messageError}) async {
+        required String fullName,
+        required String uuid,
+        required String url,
+        required dynamic head,
+        required dynamic params,
+        required dynamic messageError}) async {
     dynamic log = params;
     String error;
     try {
@@ -193,15 +205,15 @@ class AppTracking {
   ///saleclub
   static trackingAPIOCR(
       {required String eventName,
-      required String userId,
-      required String fullName,
-      required String uuid,
-      required String url,
-      required String status,
-      required dynamic head,
-      required dynamic params,
-      required dynamic messageError,
-      required String screenName}) async {
+        required String userId,
+        required String fullName,
+        required String uuid,
+        required String url,
+        required String status,
+        required dynamic head,
+        required dynamic params,
+        required dynamic messageError,
+        required String screenName}) async {
     dynamic log = params;
     String error;
     try {
